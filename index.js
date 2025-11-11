@@ -9,20 +9,42 @@ dotenv.config();
 
 const app = express();
 
-// 🧩 Middleware
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || "*" }));
+// ✅ Allow both local and deployed frontend origins
+const allowedOrigins = [
+  "http://localhost:5173",                 // local development
+  "https://patienthelpproject.netlify.app" // deployed frontend
+];
+
+// ✅ Clean & secure CORS middleware (only once)
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow Postman or server-to-server requests with no origin
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        console.warn("❌ Blocked by CORS:", origin);
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
+// ✅ Parse JSON
 app.use(express.json());
 
-// 🧩 Database Connection
+// ✅ Connect to MongoDB
 connectDB();
 
-// 🧩 Root Test Route
+// ✅ Test route
 app.get("/", (_, res) => res.send("✅ Backend running with MongoDB + JWT"));
 
-// 🧩 Main Routes
-app.use("/api/doctors", doctorRoutes);
-app.use("/api/patients", patientRoutes);
+// ✅ Routes
+app.use("/api/doctor", doctorRoutes);
+app.use("/api/patient", patientRoutes);
 
-// 🧩 Server Start
+// ✅ Server Start
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
